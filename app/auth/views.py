@@ -15,7 +15,7 @@ def login():
         if user is not None and user.verify_password(form.password.data):
             login_user(user=user, remember=form.remember_me.data)
             next = request.args.get('next')
-            if next is None or not next.startwith('/'):
+            if next is None or not next.startswith('/'):
                 next = url_for('main.index')
             return redirect(next)
         flash('Invalid username or password.')
@@ -43,7 +43,7 @@ def register():
         token = user.generate_confirmation_token()
         send_email(user.email, 'Confirm your account', 'auth/email/confirm', user=user, token=token)
         flash('A confirmation email has been sent to you by email.')
-        return redirect(url_for('main.login'))
+        return redirect(url_for('main.index'))
     return render_template('auth/register.html', form=form)
 
 
@@ -52,7 +52,7 @@ def register():
 def confirm(token):
     if current_user.confirmed:
         return redirect(url_for('main.index'))
-    if current_user.comfirm(token):
+    if current_user.confirm(token):
         db.session.commit()
         flash('You have confirmed your account. Thanks!')
     else:
@@ -74,6 +74,7 @@ def unconfirmed():
     if current_user.is_anonymous or current_user.confirmed:
         return redirect(url_for('main.index'))
     return render_template('auth/unconfirmed.html')
+
 
 @auth.route('/confirm')
 @login_required
