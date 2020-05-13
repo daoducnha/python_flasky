@@ -4,6 +4,7 @@ from . import main
 from .forms import NameForm
 from flask_login import login_required
 
+
 @main.route('/', methods=['GET', 'POST'])
 def index():
     form = NameForm()
@@ -16,7 +17,10 @@ def index():
                            known=session.get('known', False),
                            current_time=datetime.utcnow())
 
+
 @main.route('/secret')
 @login_required
 def secret():
     return "Only authenticated users are allowed!"
+
+

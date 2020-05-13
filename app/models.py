@@ -1,9 +1,9 @@
-from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app
 from flask_login import UserMixin, AnonymousUserMixin
 from . import login_manager, db
+from sqlalchemy.schema import Sequence
 
 
 @login_manager.user_loader
@@ -14,7 +14,7 @@ def load_user(user_id):
 class Role(db.Model):
     __table_args__ = {'extend_existing': True}
     __tablename__ = 'roles'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, Sequence('id_seq'), primary_key=True)
     name = db.Column(db.String(64), unique=True)
     default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
@@ -36,7 +36,7 @@ class Role(db.Model):
         if self.has_permission(perm):
             self.permissions -= perm
 
-    def reset_permission(self):
+    def reset_permissions(self):
         self.permissions = 0
 
     def has_permission(self, perm):
@@ -50,17 +50,18 @@ class Role(db.Model):
             'Administrator': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE, Permission.MODERATE,
                               Permission.ADMIN]
         }
+
         default_role = 'User'
         for r in roles:
-            role = Role.query.fillter_by(name=r).first()
+            role = Role.query.filter_by(name=r).first()
             if role is None:
                 role = Role(name=r)
-            role.reset_permission()
+            role.reset_permissions()
             for perm in roles[r]:
                 role.add_permission(perm)
-                role.default = (role.name == default_role)
-                db.session.add(role)
-            db.session.commit()
+            role.default = (role.name == default_role)
+            db.session.add(role)
+        db.session.commit()
 
 
 class Permission:
@@ -74,7 +75,7 @@ class Permission:
 class User(UserMixin, db.Model):
     __table_args__ = {'extend_existing': True}
     __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, Sequence('id_seq'), primary_key=True)
     email = db.Column(db.String(64), unique=True, index=True)
     username = db.Column(db.String(64), unique=True, index=True)
     password_hash = db.Column(db.String(128))
@@ -85,9 +86,9 @@ class User(UserMixin, db.Model):
         super(User, self).__init__(**kwargs)
         if self.role is None:
             if self.email == current_app.config['FLASKY_ADMIN']:
-                self.role = Role.query.fillter_by(name='Administrator').first()
+                self.role = Role.query.filter_by(name='Administrator').first()
             if self.role is None:
-                self.role = Role.query.fillter_by(default=True).first()
+                self.role = Role.query.filter_by(default=True).first()
 
     @property
     def password(self):
@@ -134,5 +135,6 @@ class AnonymousUser(AnonymousUserMixin):
 
     def is_administrator(self):
         return False
+
 
 login_manager.anonymous_user = AnonymousUser
