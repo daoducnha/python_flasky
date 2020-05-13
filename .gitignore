@@ -1,1 +1,4 @@
 */*.cpython-36.pyc
+.idea/
+data-dev.sqlite
+venv/*
